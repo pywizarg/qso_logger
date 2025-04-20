@@ -1,97 +1,102 @@
-import sys
-from supabase_client import supabase, get_bands, get_modes, get_countries
-from models import QSO
-from rich.console import Console
-from rich.table import Table
-import datetime
+import tkinter as tk
+from tkinter import ttk, messagebox
+import ttkbootstrap as tb
+from ttkbootstrap.constants import *
+from supabase_client import save_qso  # Usa la función que ya tienes para guardar QSOs
 
-console = Console()
+# Datos de ejemplo, puedes reemplazar por los obtenidos desde la base de datos Supabase
+bands = ["160m", "80m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "6m", "2m"]
+modes = ["SSB", "CW", "FM", "AM", "RTTY", "FT8", "FT4", "PSK31", "JT65"]
+countries = ["Argentina", "Brazil", "Chile", "Germany", "Japan", "USA", "Spain", "Italy", "Canada"]
 
-# Función para registrar un nuevo QSO
-def new_qso():
-    console.print("[bold green]Registrando nuevo QSO...[/bold green]")
-    
-    # Obtener datos de las tablas de Supabase
-    bands = get_bands()
-    modes = get_modes()
-    countries = get_countries()
-    
-    # Muestra las bandas disponibles
-    console.print("\n[bold]Bandas disponibles:[/bold]")
-    for idx, band in enumerate(bands.data, 1):
-        console.print(f"{idx}. {band['name']}")
-    
-    # Selección de banda
-    band_idx = int(input("\nSelecciona el número de banda: ")) - 1
-    band = bands.data[band_idx]['name']
-    
-    # Muestra los modos disponibles
-    console.print("\n[bold]Modos disponibles:[/bold]")
-    for idx, mode in enumerate(modes.data, 1):
-        console.print(f"{idx}. {mode['name']}")
-    
-    # Selección de modo
-    mode_idx = int(input("\nSelecciona el número de modo: ")) - 1
-    mode = modes.data[mode_idx]['name']
-    
-    # Muestra los países disponibles
-    console.print("\n[bold]Países disponibles:[/bold]")
-    for idx, country in enumerate(countries.data, 1):
-        console.print(f"{idx}. {country['name']}")
-    
-    # Selección de país
-    country_idx = int(input("\nSelecciona el número de país: ")) - 1
-    country = countries.data[country_idx]['name']
-    
-    operator = input("Operador: ")
-    signal_report = input("Reporte de señal: ")
-    date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    qso = QSO(band, mode, country, operator, date, signal_report)
-    console.print(f"\nQSO registrado: {qso}")
+class QSOLoggerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("QSO Logger")
+        self.root.geometry("500x600")
+        self.root.resizable(False, False)
 
-    # Aquí podrías almacenar el QSO en Supabase si lo deseas
+        self.frame = tb.Frame(root, padding=20)
+        self.frame.pack(fill=BOTH, expand=True)
 
-# Función para listar los QSOs registrados
-def list_qsos():
-    console.print("[bold blue]QSOs registrados:[/bold blue]")
-    
-    # Aquí podrías hacer una consulta a Supabase para obtener los QSOs almacenados
-    # Actualmente solo los mostramos de ejemplo
-    qsos = [
-        QSO("20m", "SSB", "Argentina", "LU1XYZ", "2025-04-20 14:32", "59+10dB"),
-        QSO("40m", "CW", "Brasil", "PY2ABC", "2025-04-20 15:00", "59")
-    ]
-    
-    # Mostrar tabla de QSOs
-    table = Table(title="Lista de QSOs")
-    table.add_column("Band", justify="center")
-    table.add_column("Mode", justify="center")
-    table.add_column("Country", justify="center")
-    table.add_column("Operator", justify="center")
-    table.add_column("Date", justify="center")
-    table.add_column("Signal Report", justify="center")
-    
-    for qso in qsos:
-        table.add_row(qso.band, qso.mode, qso.country, qso.operator, qso.date, qso.signal_report)
-    
-    console.print(table)
+        self.create_widgets()
 
-# Función principal que maneja el CLI
-def main():
-    if len(sys.argv) < 2:
-        console.print("[bold red]¡Debes especificar una acción! Usa 'new-qso' o 'list-qsos'.[/bold red]")
-        sys.exit(1)
-    
-    action = sys.argv[1]
-    
-    if action == "new-qso":
-        new_qso()
-    elif action == "list-qsos":
-        list_qsos()
-    else:
-        console.print("[bold red]Acción no válida. Usa 'new-qso' o 'list-qsos'.[/bold red]")
-        sys.exit(1)
+    def create_widgets(self):
+        tb.Label(self.frame, text="Callsign").pack(anchor=W)
+        self.callsign = tb.Entry(self.frame)
+        self.callsign.pack(fill=X, pady=5)
+
+        tb.Label(self.frame, text="Date (YYYY-MM-DD)").pack(anchor=W)
+        self.date = tb.Entry(self.frame)
+        self.date.pack(fill=X, pady=5)
+
+        tb.Label(self.frame, text="Time (HH:MM)").pack(anchor=W)
+        self.time = tb.Entry(self.frame)
+        self.time.pack(fill=X, pady=5)
+
+        tb.Label(self.frame, text="Band").pack(anchor=W)
+        self.band = tb.Combobox(self.frame, values=bands, state="readonly")
+        self.band.pack(fill=X, pady=5)
+
+        tb.Label(self.frame, text="Mode").pack(anchor=W)
+        self.mode = tb.Combobox(self.frame, values=modes, state="readonly")
+        self.mode.pack(fill=X, pady=5)
+
+        tb.Label(self.frame, text="Country").pack(anchor=W)
+        self.country = tb.Combobox(self.frame, values=countries, state="readonly")
+        self.country.pack(fill=X, pady=5)
+
+        tb.Label(self.frame, text="RST Sent").pack(anchor=W)
+        self.rst_sent = tb.Entry(self.frame)
+        self.rst_sent.pack(fill=X, pady=5)
+
+        tb.Label(self.frame, text="RST Received").pack(anchor=W)
+        self.rst_rcvd = tb.Entry(self.frame)
+        self.rst_rcvd.pack(fill=X, pady=5)
+
+        tb.Label(self.frame, text="Comments").pack(anchor=W)
+        self.comments = tb.Entry(self.frame)
+        self.comments.pack(fill=X, pady=5)
+
+        tb.Button(self.frame, text="Guardar QSO", bootstyle=SUCCESS, command=self.save).pack(pady=15)
+
+    def save(self):
+        qso_data = {
+            "callsign": self.callsign.get(),
+            "date": self.date.get(),
+            "time": self.time.get(),
+            "band": self.band.get(),
+            "mode": self.mode.get(),
+            "country": self.country.get(),
+            "rst_sent": self.rst_sent.get(),
+            "rst_received": self.rst_rcvd.get(),
+            "comments": self.comments.get()
+        }
+
+        if not all(qso_data.values()):
+            messagebox.showerror("Error", "Todos los campos deben estar completos.")
+            return
+
+        try:
+            save_qso(qso_data)
+            messagebox.showinfo("Éxito", "QSO guardado correctamente.")
+            self.clear_fields()
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo guardar el QSO.\n{str(e)}")
+
+    def clear_fields(self):
+        self.callsign.delete(0, tk.END)
+        self.date.delete(0, tk.END)
+        self.time.delete(0, tk.END)
+        self.band.set('')
+        self.mode.set('')
+        self.country.set('')
+        self.rst_sent.delete(0, tk.END)
+        self.rst_rcvd.delete(0, tk.END)
+        self.comments.delete(0, tk.END)
+
 
 if __name__ == "__main__":
-    main()
+    app = tb.Window(themename="minty")  # Puedes probar con: "superhero", "flatly", "solar", etc.
+    QSOLoggerApp(app)
+    app.mainloop()

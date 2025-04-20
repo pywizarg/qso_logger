@@ -22,3 +22,8 @@ def get_modes():
 # Función para obtener países
 def get_countries():
     return supabase.table("countries").select("*").execute()
+
+# Función para guardar un QSO
+def save_qso(qso_data: dict):
+    response = supabase.table("qsos").insert(qso_data).execute()
+    return response
